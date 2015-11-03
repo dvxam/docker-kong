@@ -19,6 +19,8 @@ plugins_available:
   - request-size-limiting
   - rate-limiting
   - response-ratelimiting
+  # customs
+  - token-validator
 
 ## The Kong working directory
 ## (Make sure you have read and write permissions)
@@ -138,6 +140,7 @@ nginx: |
 
         # This property will be used later by proxy_pass
         set $backend_url nil;
+        set $backend_host nil;
 
         # Authenticate the user and load the API info
         access_by_lua 'kong.exec_plugins_access()';
@@ -146,6 +149,7 @@ nginx: |
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $backend_host;
         proxy_pass $backend_url;
         proxy_pass_header Server;
 
