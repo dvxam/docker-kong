@@ -3,7 +3,6 @@ cass:
   ports:
     - 9042
 
-
 kong:
   build: kong
   ports:

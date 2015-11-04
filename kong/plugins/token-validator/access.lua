@@ -4,23 +4,33 @@ local http_client = require "kong.tools.http_client"
 local _M = {}
 
 local function extract_auth_token(config)
+  -- Extract auth token from request headers
   return ngx.req.get_headers()[config.header]
 end
 
 local function token_empty(token)
-  if token == nil or #token <= 0 then
-    return true
+  return token == nil or #token <= 0
+end
+
+local function find_authentication_url(config)
+  -- If config.auth_service_url is set, this is the choosen value
+  if config.auth_service_url and #config.auth_service_url > 0 then
+    return config.auth_service_url
   end
-  return false
+
+  -- Else it bases url on config.auth_service.upstream_url and path /session
+  local apis, err = dao.apis:find_by_keys { name = config.auth_service }
+  if #apis == 1 then
+    return apis[1].upstream_url .. 'session'
+  end
+
+  -- If neither auth_service_url or auth_service is set, it returns
+  return "http://0.0.0.0/session"
 end
 
 local function check_token_validity(auth_token, config)
-  local url = "http://mrdrive-pimp-my-auth-staging.herokuapp.com/session"
-  local headers = {
-    ["Content-Type"] = "application/json",
-    [config.header] = auth_token
-  }
-  return http_client.get(url, {}, headers)
+  local url = find_authentication_url(config)
+  return http_client.get(url, {}, { [config.header] = auth_token })
 end
 
 function _M.execute(config)
